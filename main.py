@@ -4,6 +4,8 @@ from websocket import create_connection
 import ssl
 import re
 import json
+import typing
+import redis
 
 wss_url = "wss://quote.wfgroup.com.hk:8083/socket.io/?token=applepieapplepieapplepieapplepie&EIO=3&transport=websocket"
 
@@ -14,7 +16,22 @@ wfgroup_ws_cmd = {
     "KEEPALIVE_ACK": "3"
 }
 
+# redis
+redis_host = "xxx.xxx.xxx.xxx"
+redis_port = 6379
+redis_pass = "xxx"
+
+
 if __name__ == "__main__":
+    # 连接redis
+    r_inst = redis.Redis(host=redis_host, port=redis_port, password=redis_pass)
+    try:
+        r_inst.ping()
+    except Exception as e:
+        print("connect to redis server failed!")
+        exit(-1)
+
+    # 连接websocket
     ws = create_connection(wss_url, \
             sslopt={"cert_reqs": ssl.CERT_NONE},
             header=["User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:128.0) Gecko/20100101 Firefox/128.0"])
@@ -52,4 +69,7 @@ if __name__ == "__main__":
 
             # 反序列化
             price_dict = json.loads(json_msg)
-            print(price_dict["products"]["HKD="])
+            print(price_dict["products"]["XAU="])
+
+            # 发送到redis
+            r_inst.lpush("gold_price", json.dumps(price_dict["products"]["XAU="]))
