@@ -38,39 +38,43 @@ if __name__ == "__main__":
     
     items_got = 0
     while True:
-        # print("recving...")
-        result = ws.recv()
-        # print(result)
+        try:
+            # print("recving...")
+            result = ws.recv()
+            # print(result)
 
-        if re.match(r'^\d.*', result):
-            # 40: 连接后服务器返回40, 需要发回40/bquote
-            if result == wfgroup_ws_cmd["SERVER_FIRST_MSG"]:
-                print("got handshake req, send back start cmd..")
-                ws.send(wfgroup_ws_cmd["GET_PRICE_START"])
+            if re.match(r'^\d.*', result):
+                # 40: 连接后服务器返回40, 需要发回40/bquote
+                if result == wfgroup_ws_cmd["SERVER_FIRST_MSG"]:
+                    print("got handshake req, send back start cmd..")
+                    ws.send(wfgroup_ws_cmd["GET_PRICE_START"])
 
-            # KEEPALIVE响应
-            if result == wfgroup_ws_cmd["KEEPALIVE_ACK"]:
-                print("got server keepalive ACK!")
+                # KEEPALIVE响应
+                if result == wfgroup_ws_cmd["KEEPALIVE_ACK"]:
+                    print("got server keepalive ACK!")
 
-        # 价格数据
-        if result.startswith("42/bquote"):
-            items_got += 1
-            # print(items_got)
-            # print("result:", result)
+            # 价格数据
+            if result.startswith("42/bquote"):
+                items_got += 1
+                # print(items_got)
+                # print("result:", result)
 
-            # 每收25条, 向服务器发2, 服务器回3, 继续走
-            if items_got > 0 and items_got % 25 == 0:
-                print("sending keepalive to wss server!")
-                ws.send(wfgroup_ws_cmd["KEEPALIVE_REQ"])
-            
-            # 取返回消息中, json的部分
-            json_msg = result[28:-1]
-            # print(json_msg)
+                # 每收25条, 向服务器发2, 服务器回3, 继续走
+                if items_got > 0 and items_got % 25 == 0:
+                    print("sending keepalive to wss server!")
+                    ws.send(wfgroup_ws_cmd["KEEPALIVE_REQ"])
+                
+                # 取返回消息中, json的部分
+                json_msg = result[28:-1]
+                # print(json_msg)
 
-            # 反序列化
-            price_dict = json.loads(json_msg)
-            print(price_dict["products"]["XAU="])
+                # 反序列化
+                price_dict = json.loads(json_msg)
+                print(price_dict["products"]["XAU="])
 
-            # 发送到redis
-            # r_inst.lpush("gold_price", json.dumps(price_dict["products"]["XAU="]))
-            r_inst.set("gold_price_rt", json.dumps(price_dict["products"]["XAU="]))
+                # 发送到redis
+                # r_inst.lpush("gold_price", json.dumps(price_dict["products"]["XAU="]))
+                r_inst.set("gold_price_rt", json.dumps(price_dict["products"]["XAU="]))
+        except KeyboardInterrupt as e:
+            print("user quit!")
+            exit(-1)
