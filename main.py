@@ -17,7 +17,7 @@ wfgroup_ws_cmd = {
 }
 
 # redis
-redis_host = "xxx.xxx.xxx.xxx"
+redis_host = "xxx"
 redis_port = 6379
 redis_pass = "xxx"
 
@@ -72,4 +72,5 @@ if __name__ == "__main__":
             print(price_dict["products"]["XAU="])
 
             # 发送到redis
-            r_inst.lpush("gold_price", json.dumps(price_dict["products"]["XAU="]))
+            # r_inst.lpush("gold_price", json.dumps(price_dict["products"]["XAU="]))
+            r_inst.set("gold_price_rt", json.dumps(price_dict["products"]["XAU="]))
