@@ -59,29 +59,34 @@ if __name__ == "__main__":
                 result = ws.recv()
 
                 if re.match(r'^\d.*', result):
+                    # 40: 连接后服务器返回40, 需要发回40/bquote
                     if result == wfgroup_ws_cmd["SERVER_FIRST_MSG"]:
                         print("Got handshake request, sending start command...")
                         ws.send(wfgroup_ws_cmd["GET_PRICE_START"])
 
+                    # KEEPALIVE响应
                     elif result == wfgroup_ws_cmd["KEEPALIVE_ACK"]:
                         print("Got server keepalive ACK.")
 
-                elif result.startswith("42/bquote"):
-                    items_got += 1
+                    # 价格数据
+                    elif result.startswith("42/bquote"):
+                        items_got += 1
 
-                    if items_got % 25 == 0:
-                        print("Sending keepalive to WebSocket server...")
-                        ws.send(wfgroup_ws_cmd["KEEPALIVE_REQ"])
+                        # 每收25条, 向服务器发2, 服务器回3, 继续走
+                        if items_got % 25 == 0:
+                            print("Sending keepalive to WebSocket server...")
+                            ws.send(wfgroup_ws_cmd["KEEPALIVE_REQ"])
 
-                    try:
-                        json_msg = result[28:-1]
-                        price_data = json.loads(json_msg)
-                        gold_price = price_data["products"]["XAU="]
-                        print(gold_price)
+                        try:
+                            # 取返回消息中, json的部分
+                            json_msg = result[28:-1]
+                            price_data = json.loads(json_msg)
+                            gold_price = price_data["products"]["XAU="]
+                            print(gold_price)
 
-                        r_inst.set("gold_price_rt", json.dumps(gold_price))
-                    except (KeyError, json.JSONDecodeError) as e:
-                        print("Failed to parse price data:", e)
+                            r_inst.set("gold_price_rt", json.dumps(gold_price))
+                        except (KeyError, json.JSONDecodeError) as e:
+                            print("Failed to parse price data:", e)
 
         except (WebSocketConnectionClosedException, ConnectionResetError) as e:
             print("WebSocket connection closed, reconnecting...", e)
